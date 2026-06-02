@@ -1,256 +1,257 @@
-// ประกาศตัวแปรเก็บหน้าจอหลัก
+// ตัวแปรแกนหลักของเกมสไตล์ยูทูบ
 var mainScreen = document.getElementById('game-page');
+var uiLang = 'TH'; 
+var currentLang = ''; 
+var selectedQuestions = []; 
+var currentIdx = 0;
 
-// ตัวแปรควบคุมระบบเกม
-let uiLang = 'TH'; 
-let currentLang = '';
-let selectedQuestions = []; 
-let currentIdx = 0;
-
-// โหลดไฟล์เสียงเอฟเฟกต์ระบบเกม (เรียกใช้ลิงก์เสียงฟรี)
+// โหลดไฟล์เสียงเอฟเฟกต์
 var s_click = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav'); 
 var s_true = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-84.wav'); 
 var s_false = new Audio('https://assets.mixkit.co/active_storage/sfx/241/241-84.wav'); 
 
-// ==========================================
-// 🔊 ฟังก์ชันสั่งให้ออกเสียงพูดภาษาต่างประเทศ
-// ==========================================
-function speakText(textToSay, languageCode) {
-    // ลบแท็ก HTML และส่วนของตัวกำกับออกก่อน เพื่อให้ระบบอ่านแค่ประโยคหลัก
-    var cleanText = textToSay.replace(/<rt>[^<]*<\/rt>/g, ''); 
-    cleanText = cleanText.replace(/<[^>]*>/g, ''); 
+// 🔊 ฟังก์ชันเล่นเสียงแยกตามภาษาเจ้าของภาษาอัตโนมัติ (ฉบับแก้บั๊กเบราว์เซอร์บล็อกเสียง)
+function speakText() {
+    window.speechSynthesis.cancel(); 
     
-    var msg = new SpeechSynthesisUtterance();
-    msg.text = cleanText;
+    var nowQuiz = selectedQuestions[currentIdx];
+    var cleanText = nowQuiz.speech.replace(/<rt>[^<]*<\/rt>/g, '').replace(/<[^>]*>/g, ''); 
     
-    // ตั้งค่ารหัสภาษาให้เบราว์เซอร์ออกเสียงถูกสำเนียง
-    if(languageCode === 'EN') { msg.lang = 'en-US'; }
-    if(languageCode === 'JP') { msg.lang = 'ja-JP'; }
-    if(languageCode === 'CN') { msg.lang = 'zh-CN'; }
+    var msg = new SpeechSynthesisUtterance(cleanText);
+    msg.rate = 1.0; 
+    msg.pitch = 1.0;
     
-    window.speechSynthesis.cancel(); // สั่งตัดเสียงเก่าที่ยังพูดไม่จบออกไปก่อน
-    window.speechSynthesis.speak(msg);
+    var voices = window.speechSynthesis.getVoices();
+    
+    // เงื่อนไขสลับภาษาตามด่านที่เล่นแบบเข้าใจง่าย ๆ
+    if (currentLang === 'EN') {
+        msg.lang = 'en-US';
+        var enVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google'));
+        if (enVoice) msg.voice = enVoice;
+    } 
+    else if (currentLang === 'JP') {
+        msg.lang = 'ja-JP';
+        var jpVoice = voices.find(v => v.lang.includes('ja') || v.lang.includes('JP'));
+        if (jpVoice) msg.voice = jpVoice;
+    } 
+    else if (currentLang === 'CN') {
+        msg.lang = 'zh-CN';
+        var cnVoice = voices.find(v => v.lang.includes('zh') || v.lang.includes('CN') || v.name.toLowerCase().includes('chinese'));
+        if (cnVoice) msg.voice = cnVoice;
+    }
+    
+    window.speechSynthesis.speak(msg); 
+}
+window.speakText = speakText;
+
+if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 }
 
-// คลังข้อมูลคำแปลหน้าเว็บสลับไปมาสองภาษา (TH / EN)
+// ระบบคำแปลหน้าเมนูและหน้าต่าง ๆ
 var translationData = {
     TH: {
-        welcome: "สวัสดี! ยินดีต้อนรับสู่ TalkBuddiez เว็บไซต์ AI สำหรับฝึกภาษา ที่จะช่วยให้การฝึกพูดและการเรียนภาษาเป็นเรื่องง่ายขึ้น สามารถพูดคุย ฝึกบทสนทนา และพัฒนาความมั่นใจได้ทุกที่ทุกเวลา ไม่ว่าจะเริ่มต้นจากระดับไหน ก็สามารถค่อย ๆ พัฒนาไปได้พร้อมกัน มาเริ่มฝึกภาษากันนะ! :3",
-        b1: "ฝึกภาษาอังกฤษ (Random Situation)",
-        b2: "ฝึกภาษาญี่ปุ่น (Random Situation)",
-        b3: "ฝึกภาษาจีน (Random Situation)",
-        back: "กลับหน้าหลัก",
-        again: "สุ่มสถานการณ์ใหม่",
-        stepText: "ความคืบหน้า",
-        wTitle: "โอ๊ะโอ... ผิดซะแล้ว",
-        wDetail: "คำตอบที่ถูกต้องสำหรับสถานการณ์นี้คือ:",
-        wTrans: "คำแปล:",
-        wBtn: "ลองเลือกใหม่อีกครั้ง",
-        winTitle: "เคลียร์สถานการณ์สำเร็จ",
-        winDetail: "เก่งมากเลยค่ะ สามารถโต้ตอบบทสนทนาสถานการณ์จำลองนี้จนจบได้อย่างสมบูรณ์แบบ นี่คือคลังศัพท์น่าจำประจำด่านค่ะ",
-        vTitle: "สรุปคำศัพท์จากด่านนี้"
+        welcome: "ยินดีต้อนรับสู่ TalkBuddiez มาเริ่มฝึกทักษะการฟังและการตอบบทสนทนากันเถอะ!",
+        b1: "🇬🇧 ฝึกภาษาอังกฤษ (3 ด่าน)", b2: "🇯🇵 ฝึกภาษาญี่ปุ่น (3 ด่าน)", b3: "🇨🇳 ฝึกภาษาจีน (3 ด่าน)",
+        back: "กลับหน้าหลัก", again: "เลือกภาษาใหม่", stepText: "ข้อที่",
+        wTitle: "โอ๊ะโอ... ตอบผิดซะแล้ว", wDetail: "คำตอบที่ถูกต้องคือ:", wTrans: "คำแปลเฉลย:", wBtn: "ลองเลือกใหม่อีกครั้ง",
+        winTitle: "🎉 เก่งมากค่ะ!", winDetail: "คุณตอบคำถามสถานการณ์จำลองของภาษานี้ครบถ้วนสมบูรณ์แล้ว!",
+        listenBtn: "🔊 กดเพื่อฟังเสียงเจ้าของภาษา"
     },
     EN: {
-        welcome: "Welcome to TalkBuddiez, an AI website for language practice that makes speaking and learning easier. You can chat, practice conversations, and build confidence anytime, anywhere. No matter your level, we can improve together. Let's start practicing together! :3",
-        b1: "English (Random Situation)",
-        b2: "Japanese (Random Situation)",
-        b3: "Chinese (Random Situation)",
-        back: "Back to Home",
-        again: "Play Another Scenario",
-        stepText: "Progress",
-        wTitle: "Oops... Wrong Answer",
-        wDetail: "The correct response for this scenario is:",
-        wTrans: "Translation:",
-        wBtn: "Try Again",
-        winTitle: "Scenario Completed",
-        winDetail: "Wonderful job! You have successfully completed this interactive scenario. Here is your vocabulary review summary:",
-        vTitle: "Vocabulary Review"
+        welcome: "Welcome to TalkBuddiez. Let's practice listening and responding to native speakers!",
+        b1: "🇬🇧 English Practice", b2: "🇯🇵 Japanese Practice", b3: "🇨🇳 Chinese Practice",
+        back: "Back to Home", again: "Choose Language", stepText: "Question",
+        wTitle: "Oops... Wrong Answer", wDetail: "The correct answer is:", wTrans: "Translation:", wBtn: "Try Again",
+        winTitle: "🎉 Perfect!", winDetail: "You have completed all dialogue scenarios for this language successfully!",
+        listenBtn: "🔊 Click to Listen"
     }
 };
 
-// คลังโจทย์สถานการณ์จำลอง (ใส่ Ruby ครอบทุกตัวอักษรจีน/ญี่ปุ่น และเพิ่ม thMeaning ไว้แสดงตอนตอบผิด)
+// คลังคำถามแยกภาษา (ทุกด่านมี 4 ตัวเลือก A, B, C, D ชัดเจน)
 var gamePackage = {
+    // 🇬🇧 ชุดภาษาอังกฤษ 3 ด่าน ช้อยส์ 4 ข้อ
     EN: [
         {
-            title: "Scenario 1: Coffee Order & Café Hangout",
-            vocab: "<li><b>For here / To go</b> = ทานที่นี่ / เอากลับบ้าน</li><li><b>Receipt</b> = ใบเสร็จ</li>",
-            questions: [
-                { 
-                    speech: "Hi! What can I get started for you today? For here or to go?", 
-                    trans: "(รับอะไรดีคะ ทานที่นี่หรือเอากลับบ้านดี?)", 
-                    choices: [
-                        { text: "I'd like an iced americano to go, please.", isCorrect: true, thMeaning: "ฉันขออเมริกาโน่เย็นเอากลับบ้านค่ะ" }, 
-                        { text: "I want to watch a movie here.", isCorrect: false, thMeaning: "" }
-                    ] 
-                },
-                { 
-                    speech: "Got it. What size would you like? Small, medium, or large?", 
-                    trans: "(รับแก้วไซส์ไหนดีคะ เล็ก กลาง หรือใหญ่?)", 
-                    choices: [
-                        { text: "A medium size, please.", isCorrect: true, thMeaning: "รับเป็นไซส์กลางค่ะ" }, 
-                        { text: "I am 20 years old.", isCorrect: false, thMeaning: "" }
-                    ] 
-                }
+            title: "Scenario 1: สั่งกาแฟที่ร้าน (Coffee Shop)",
+            speech: "Hi there! What can I get started for you today?",
+            trans: "(สวัสดีค่ะ รับเครื่องดื่มอะไรดีคะวันนี้?)",
+            choices: [
+                { text: "A. I'd like an iced latte with oat milk, please.", isCorrect: true, thMeaning: "ฉันขอลาเต้เย็นใส่นมโอ๊ตหนึ่งแก้วค่ะ" },
+                { text: "B. I want to buy a new smartphone.", isCorrect: false, thMeaning: "" },
+                { text: "C. The weather is very cold today.", isCorrect: false, thMeaning: "" },
+                { text: "D. Yes, I can ride a bicycle.", isCorrect: false, thMeaning: "" }
             ]
         },
         {
-            title: "Scenario 2: Lost Baggage at the Airport",
-            vocab: "<li><b>Baggage claim</b> = จุดรับสัมภาระ</li><li><b>Baggage tag</b> = แท็กผูกกระเป๋า</li>",
-            questions: [
-                { 
-                    speech: "Hello, this is the Lost & Found desk. How can I help you today?", 
-                    trans: "(สวัสดีค่ะ นี่คือแผนกติดตามของหาย มีอะไรให้ช่วยไหมคะ?)", 
-                    choices: [
-                        { text: "Excuse me, my suitcase didn't come out on the baggage carousel.", isCorrect: true, thMeaning: "ขอโทษนะคะ กระเป๋าเดินทางของฉันไม่ได้ออกมาที่สายพานรับสัมภาระค่ะ" }, 
-                        { text: "I want to buy a ticket to New York right now.", isCorrect: false, thMeaning: "" }
-                    ] 
-                }
+            title: "Scenario 2: เช็คอินที่สนามบิน (Airport Check-in)",
+            speech: "Can I see your passport and ticket, please?",
+            trans: "(ขอดูหนังสือเดินทางและตั๋วเครื่องบินด้วยค่ะ?)",
+            choices: [
+                { text: "A. I like eating pizza for dinner.", isCorrect: false, thMeaning: "" },
+                { text: "B. Here they are. I'm flying to Tokyo.", isCorrect: true, thMeaning: "นี่ค่ะ ฉันกำลังจะบินไปโตเกียว" },
+                { text: "C. Turn left at the next corner.", isCorrect: false, thMeaning: "" },
+                { text: "D. My favorite color is blue.", isCorrect: false, thMeaning: "" }
+            ]
+        },
+        {
+            title: "Scenario 3: ถามราคาสินค้าในห้าง (Shopping)",
+            speech: "Excuse me, how much is this jacket?",
+            trans: "(ขอโทษนะคะ เสื้อแจ็คเก็ตตัวนี้ราคาเท่าไหร่คะ?)",
+            choices: [
+                { text: "A. It is 10 o'clock right now.", isCorrect: false, thMeaning: "" },
+                { text: "B. I am a student at the university.", isCorrect: false, thMeaning: "" },
+                { text: "C. It's 50 dollars, and we have a 10% discount today.", isCorrect: true, thMeaning: "ราคา 50 ดอลลาร์ค่ะ และวันนี้เราลดราคาให้อีก 10% ด้วยนะ" },
+                { text: "D. No, thank you. I'm full.", isCorrect: false, thMeaning: "" }
             ]
         }
     ],
+    // 🇯🇵 ชุดภาษาญี่ปุ่น 3 ด่าน ช้อยส์ 4 ข้อ
     JP: [
         {
-            title: "Scenario 1: Dining at a Japanese Restaurant",
-            vocab: "<li><b>何名さま (Nanmei)</b> = มากันกี่ท่าน</li><li><b>お会計 (Okaikei)</b> = เช็คบิล</li>",
-            questions: [
-                { 
-                    speech: "いらっしゃいませ！<ruby>何名<rt>なんめい</rt></ruby>さまですか？", 
-                    trans: "(ยินดีต้อนรับค่ะ มากันกี่ท่านคะ?)", 
-                    choices: [
-                        { text: "<ruby>一人<rt>ひとり</rt></ruby>です。<ruby>席<rt>せき</rt></ruby>はカウンターでいいです。", isCorrect: true, thMeaning: "มาคนเดียวค่ะ นั่งโต๊ะเคาน์เตอร์ก็ได้ค่ะ" }, 
-                        { text: "<ruby>美味<rt>おい</rt></ruby>しいです！", isCorrect: false, thMeaning: "" }
-                    ] 
-                },
-                { 
-                    speech: "お<ruby>味<rt>あじ</rt></ruby>はいかがでしたか？お<ruby>会計<rt>かいけい</rt></ruby>にいたしますか？", 
-                    trans: "(รสชาติเป็นอย่างไรบ้างคะ จะเช็คบิลเลยไหมคะ?)", 
-                    choices: [
-                        { text: "とても<ruby>美味<rt>おい</rt></ruby>しかったです。お<ruby>会計<rt>かいけい</rt></ruby>をお<ruby>念<rt>ねが</rt></ruby>いします。", isCorrect: true, thMeaning: "อร่อยมากๆ เลยค่ะ เช็คบิลด้วยนะคะ" }, 
-                        { text: "お<ruby>金<rt>かね</rt></ruby>がありません。", isCorrect: false, thMeaning: "" }
-                    ] 
-                }
+            title: "Scenario 1: เข้าร้านอาหาร (レストラン)",
+            speech: "いらっしゃいませ！<ruby>何名<rt>なんめい</rt></ruby>さまですか？",
+            trans: "(ยินดีต้อนรับค่ะ มากันกี่ท่านคะ?)",
+            choices: [
+                { text: "A. <ruby>二<rt>ふた</rt></ruby><ruby>人<rt>り</rt></ruby>です。<ruby>禁煙<rt>きんえん</rt></ruby><ruby>席<rt>せき</rt></ruby>でお<ruby>願<rt>ねが</rt></ruby>いします。", isCorrect: true, thMeaning: "มาสองคนค่ะ ขอเป็นโซนปลอดบุหรี่นะคะ" },
+                { text: "B. これはお<ruby>城<rt>しろ</rt></ruby>です。", isCorrect: false, thMeaning: "" },
+                { text: "C. すみません、お<ruby>元気<rt>げんき</rt></ruby>ですか？", isCorrect: false, thMeaning: "" },
+                { text: "D. さようなら、また<ruby>明日<rt>あした</rt></ruby>。", isCorrect: false, thMeaning: "" }
+            ]
+        },
+        {
+            title: "Scenario 2: ซื้อของและจ่ายเงิน (お買い物)",
+            speech: "お<ruby>会計<rt>かいけい</rt></ruby>は<ruby>現金<rt>げんきん</rt></ruby>ですか？カードですか？",
+            trans: "(ชำระเงินด้วยเงินสดหรือบัตรเครดิตดีคะ?)",
+            choices: [
+                { text: "A. <ruby>肉<rt>にく</rt></ruby>がめちゃくちゃ<ruby>好<rt>す</rt></ruby>きです。", isCorrect: false, thMeaning: "" },
+                { text: "B. クレジットカードでお<ruby>願<rt>ねが</rt></ruby>いします。", isCorrect: true, thMeaning: "ชำระด้วยบัตรเครดิตค่ะ" },
+                { text: "C. トイレはあそこです。", isCorrect: false, thMeaning: "" },
+                { text: "D. ありがとうございます、おいしいです。", isCorrect: false, thMeaning: "" }
+            ]
+        },
+        {
+            title: "Scenario 3: ถามทางไปสถานีรถไฟ (駅への道)",
+            speech: "すみません、<ruby>新宿<rt>しんじゅく</rt></ruby><ruby>駅<rt>えき</rt></ruby>へはどう行けばいいですか？",
+            trans: "(ขอโทษนะคะ ไปสถานีชินจูกุต้องไปยังไงคะ?)",
+            choices: [
+                { text: "A. わたしはタイ<ruby>人<rt>じん</rt></ruby>です。", isCorrect: false, thMeaning: "" },
+                { text: "B. このカフェはとてもきれいです。", isCorrect: false, thMeaning: "" },
+                { text: "C. まっすぐ行くと、<ruby>左側<rt>ひだりがわ</rt></ruby>に見えますよ。", isCorrect: true, thMeaning: "เดินตรงไปข้างหน้าเรื่อย ๆ จะมองเห็นอยู่ทางซ้ายมือค่ะ" },
+                { text: "D. はい、わかりました。さようなら。", isCorrect: false, thMeaning: "" }
             ]
         }
     ],
+    // 🇨🇳 ชุดภาษาจีน 3 ด่าน ช้อยส์ 4 ข้อ
     CN: [
         {
-            title: "Scenario 1: Buying Souvenirs & Bargaining",
-            vocab: "<li><b>纪念品 (Jìniànpǐn)</b> = ของที่ระลึก</li><li><b>便宜点 (Piányi diǎn)</b> = ลดราคาหน่อย</li>",
-            questions: [
-                { 
-                    speech: "<ruby>美<rt>měi</rt></ruby><ruby>女<rt>nǚ</rt></ruby>，<ruby>想<rt>xiǎng</rt></ruby><ruby>买<rt>mǎi</rt></ruby><ruby>点<rt>diǎn</rt></ruby><ruby>什<rt>shén</rt></ruby><ruby>么<rt>me</rt></ruby>？<ruby>这<rt>zhè</rt></ruby><ruby>些<rt>xiē</rt></ruby><ruby>都<rt>dōu</rt></ruby><ruby>是<rt>shì</rt></ruby><ruby>当<rt>dāng</rt></ruby><ruby>地<rt>dì</rt></ruby><ruby>特<rt>tè</rt></ruby><ruby>产<rt>chǎn</rt></ruby><ruby>的<rt>de</rt></ruby><ruby>纪<rt>jì</rt></ruby><ruby>念<rt>niàn</rt></ruby><ruby>品<rt>pǐn</rt></ruby><ruby>哦<rt>ó</rt></ruby>！", 
-                    trans: "(คนสวย อยากซื้ออะไรดีคะ พวกนี้เป็นของที่ระลึกท้องถิ่นนะ!)", 
-                    choices: [
-                        { text: "<ruby>我<rt>wǒ</rt></ruby><ruby>想<rt>xiǎng</rt></ruby><ruby>看<rt>kàn</rt></ruby><ruby>看<rt>kan</rt></ruby><ruby>这<rt>zhè</rt></ruby><ruby>个<rt>gè</rt></ruby><ruby>旗<rt>qí</rt></ruby><ruby>袍<rt>páo</rt></ruby>，<ruby>多<rt>duō</rt></ruby><ruby>少<rt>shǎo</rt></ruby><ruby>钱<rt>qián</rt></ruby>？", isCorrect: true, thMeaning: "ฉันอยากลองดูชุดกี่เพ้าตัวนี้ ราคาเท่าไหร่คะ?" }, 
-                        { text: "<ruby>我<rt>wǒ</rt></ruby><ruby>不<rt>bù</rt></ruby><ruby>喜<rt>xǐ</rt></ruby><ruby>欢<rt>huan</rt></ruby><ruby>买<rt>mǎi</rt></ruby><ruby>东<rt>dōng</rt></ruby><ruby>西<rt>xi</rt></ruby>。", isCorrect: false, thMeaning: "" }
-                    ] 
-                }
+            title: "Scenario 1: สั่งเครื่องดื่มในร้านกาแฟ (咖啡厅)",
+            speech: "<ruby>美<rt>měi</rt></ruby><ruby>女<rt>nǚ</rt></ruby>，<ruby>今<rt>jīn</rt></ruby><ruby>天<rt>tiān</rt></ruby><ruby>想<rt>xiǎng</rt></ruby><ruby>喝<rt>hē</rt></ruby><ruby>点<rt>diǎn</rt></ruby><ruby>什<rt>shén</rt></ruby><ruby>么<rt>me</rt></ruby>？",
+            trans: "(คนสวย วันนี้อยากดื่มอะไรดีคะ?)",
+            choices: [
+                { text: "A. <ruby>我<rt>wǒ</rt></ruby><ruby>想<rt>xiǎng</rt></ruby><ruby>要<rt>yào</rt></ruby><ruby>一<rt>yī</rt></ruby><ruby>杯<rt>bēi</rt></ruby><ruby>冰<rt>bīng</rt></ruby><ruby>美<rt>měi</rt></ruby><ruby>式<rt>shì</rt></ruby>。", isCorrect: true, thMeaning: "ฉันขออเมริกาโน่เย็นหนึ่งแก้วค่ะ" },
+                { text: "B. <ruby>这<rt>zhè</rt></ruby><ruby>个<rt>gè</rt></ruby><ruby>衣<rt>yī</rt></ruby><ruby>服<rt>fu</rt></ruby><ruby>太<rt>tài</rt></ruby><ruby>贵<rt>guì</rt></ruby><ruby>了<rt>le</rt></ruby>。", isCorrect: false, thMeaning: "" },
+                { text: "C. <ruby>我<rt>wǒ</rt></ruby><ruby>不<rt>bù</rt></ruby><ruby>知<rt>zhī</rt></ruby><ruby>道<rt>dào</rt></ruby><ruby>医<rt>yī</rt></ruby><ruby>院<rt>yuàn</rt></ruby><ruby>在<rt>zài</rt></ruby><ruby>哪<rt>nǎ</rt></ruby>。", isCorrect: false, thMeaning: "" },
+                { text: "D. <ruby>再<rt>zài</rt></ruby><ruby>见<rt>jiàn</rt></ruby>，<ruby>祝<rt>zhù</rt></ruby><ruby>你<rt>nǐ</rt></ruby><ruby>幸<rt>xìng</rt></ruby><ruby>福<rt>fú</rt></ruby>。", isCorrect: false, thMeaning: "" }
+            ]
+        },
+        {
+            title: "Scenario 2: ซื้อของที่ระลึกและต่อราคา (买纪念品)",
+            speech: "<ruby>这<rt>zhè</rt></ruby><ruby>个<rt>gè</rt></ruby><ruby>旗<rt>qí</rt></ruby><ruby>袍<rt>páo</rt></ruby><ruby>一<rt>yī</rt></ruby><ruby>百<rt>bǎi</rt></ruby><ruby>块<rt>kuài</rt></ruby><ruby>钱<rt>qián</rt></ruby>。",
+            trans: "(ชุดกี่เพ้าตัวนี้ราคา 100 หยวนค่ะ)",
+            choices: [
+                { text: "A. <ruby>我<rt>wǒ</rt></ruby><ruby>想<rt>xiǎng</rt></ruby><ruby>吃<rt>chī</rt></ruby><ruby>面<rt>miàn</rt></ruby><ruby>条<rt>tiáo</rt></ruby>。", isCorrect: false, thMeaning: "" },
+                { text: "B. <ruby>太<rt>tài</rt></ruby><ruby>贵<rt>guì</rt></ruby><ruby>了<rt>le</rt></ruby>！<ruby>便<rt>piányi</rt></ruby><ruby>宜<rt>yi</rt></ruby><ruby>点<rt>diǎn</rt></ruby><ruby>吧<rt>ba</rt></ruby>？", isCorrect: true, thMeaning: "แพงเกินไปแล้ว! ลดหน่อยได้ไหมคะ?" },
+                { text: "C. <ruby>下<rt>xià</rt></ruby><ruby>雨<rt>yǔ</rt></ruby><ruby>了<rt>le</rt></ruby>，<ruby>我<rt>wǒ</rt></ruby><ruby>回<rt>huí</rt></ruby><ruby>家<rt>jiā</rt></ruby><ruby>了<rt>le</rt></ruby>。", isCorrect: false, thMeaning: "" },
+                { text: "D. <ruby>你<rt>nǐ</rt></ruby><ruby>是<rt>shì</rt></ruby><ruby>哪<rt>nǎ</rt></ruby><ruby>国<rt>guó</rt></ruby><ruby>人<rt>rén</rt></ruby>？", isCorrect: false, thMeaning: "" }
+            ]
+        },
+        {
+            title: "Scenario 3: ถามทางไปสนามบิน (问路)",
+            speech: "<ruby>请<rt>qǐng</rt></ruby><ruby>问<rt>wèn</rt></ruby>，<ruby>机<rt>jī</rt></ruby><ruby>场<rt>chǎng</rt></ruby><ruby>怎<rt>zěn</rt></ruby><ruby>么<rt>me</rt></ruby><ruby>走<rt>zǒu</rt></ruby>？",
+            trans: "(ขอถามหน่อยค่ะ ไปสนามบินไปยังไงคะ?)",
+            choices: [
+                { text: "A. <ruby>我<rt>wǒ</rt></ruby><ruby>没<rt>méi</rt></ruby><ruby>有<rt>yǒu</rt></ruby><ruby>钱<rt>qián</rt></ruby>。", isCorrect: false, thMeaning: "" },
+                { text: "B. <ruby>这<rt>zhè</rt></ruby><ruby>个<rt>gè</rt></ruby><ruby>很<rt>hěn</rt></ruby><ruby>好<rt>hǎo</rt></ruby><ruby>吃<rt>chī</rt></ruby>。", isCorrect: false, thMeaning: "" },
+                { text: "C. <ruby>我<rt>wǒ</rt></ruby><ruby>不<rt>bù</rt></ruby><ruby>喜<rt>xǐ</rt></ruby><ruby>欢<rt>huān</rt></ruby><ruby>看<rt>kàn</rt></ruby><ruby>电<rt>diàn</rt></ruby><ruby>影<rt>yǐng</rt></ruby>。", isCorrect: false, thMeaning: "" },
+                { text: "D. <ruby>往<rt>wǎng</rt></ruby><ruby>前<rt>qián</rt></ruby><ruby>走<rt>zǒu</rt></ruby>，<ruby>看<rt>kàn</rt></ruby><ruby>见<rt>jiàn</rt></ruby><ruby>地<rt>dì</rt></ruby><ruby>铁<rt>tiě</rt></ruby><ruby>站<rt>zhàn</rt></ruby><ruby>就<rt>jiù</rt></ruby><ruby>到<rt>dào</rt></ruby><ruby>了<rt>le</rt></ruby>。", isCorrect: true, thMeaning: "เดินตรงไปข้างหน้า เห็นสถานีรถไฟใต้ดินก็ถึงแล้วค่ะ" }
             ]
         }
     ]
 };
 
-// ฟังก์ชันสลับภาษาของปุ่มบนขวา (TH/EN)
 function changeUiLang(lang) {
     s_click.play(); 
     uiLang = lang;
     document.getElementById('th-btn').classList.toggle('active', lang === 'TH');
     document.getElementById('en-btn').classList.toggle('active', lang === 'EN');
-    if (currentLang === '') { 
-        loadStartPage(); 
-    }
+    if (currentLang === '') { loadStartPage(); }
 }
 window.changeUiLang = changeUiLang;
 
-// ฟังก์ชันเริ่มเกมและสุ่มเลือกด่านตามภาษาที่เลือก
-function startRandomGame(lang) {
+function startLanguageGame(lang) {
     s_click.play(); 
-    currentLang = lang;
+    currentLang = lang; 
     currentIdx = 0;
-    
-    var listData = gamePackage[lang];
-    var randomNum = Math.floor(Math.random() * listData.length);
-    selectedQuestions = listData[randomNum]; 
-    
+    selectedQuestions = gamePackage[lang]; // ดึงชุดคำถามภาษาที่ผู้ใช้เลือกมาใช้งาน
     loadQuizQuestion();
 }
-window.startRandomGame = startRandomGame;
+window.startLanguageGame = startLanguageGame;
 
-// ฟังก์ชันแสดงโจทย์คำถามและปุ่มตัวเลือก
 function loadQuizQuestion() {
-    var title = selectedQuestions.title;
-    var quizList = selectedQuestions.questions;
-    var nowQuiz = quizList[currentIdx];
-    var totalQuiz = quizList.length;
+    var nowQuiz = selectedQuestions[currentIdx];
     var txt = translationData[uiLang]; 
-    
     var btnHtml = '';
+    
+    // วนลูปสร้างปุ่มคำตอบ 4 ปุ่ม แบบอ่านเข้าใจง่ายตามสไตล์ YouTube Tutorial
     for (var i = 0; i < nowQuiz.choices.length; i++) {
         var opt = nowQuiz.choices[i];
-        btnHtml += '<button class="btn-choice" onclick="checkUserAnswer(' + opt.isCorrect + ')">' + opt.text + '</button>';
+        btnHtml += `<button class="btn-choice" onclick="checkUserAnswer(${opt.isCorrect})">${opt.text}</button>`;
     }
-
+    
     mainScreen.innerHTML = `
-        <div class="badge-score">${txt.stepText}: ${currentIdx + 1} / ${totalQuiz}</div>
-        <h2>${title}</h2>
+        <div class="badge-score">${txt.stepText}: ${currentIdx + 1} / ${selectedQuestions.length}</div>
+        <h2>${nowQuiz.title}</h2>
         <div class="bubble">
             <b>Character:</b> "${nowQuiz.speech}"
             <span class="sub-trans">${nowQuiz.trans}</span>
         </div>
-        <div>
-            ${btnHtml}
-            <button class="btn-choice btn-back-home" onclick="goHomeAction()">${txt.back}</button>
-        </div>
+        <button class="btn-choice" style="background-color: #E8F0FE; color: #1A73E8; text-align: center; border-color: #D2E3FC; box-shadow: 0 4px 0px #BCC1C6; margin-bottom: 20px;" onclick="speakText()">
+            ${txt.listenBtn}
+        </button>
+        <div>${btnHtml}<button class="btn-choice btn-back-home" onclick="goHomeAction()">${txt.back}</button></div>
     `;
-
-    // สั่งให้ระบบอ่านออกเสียงคำถามภาษาต่างประเทศทันทีแบบอัตโนมัติ
-    speakText(nowQuiz.speech, currentLang);
 }
 
-// ฟังก์ชันตรวจสอบคำตอบที่ผู้เล่นกดเลือก
 function checkUserAnswer(isCorrect) {
-    var quizList = selectedQuestions.questions;
-    if (isCorrect == true) {
+    if (isCorrect === true) {
         s_true.play(); 
         currentIdx = currentIdx + 1;
-        if (currentIdx < quizList.length) {
-            loadQuizQuestion();
-        } else {
-            loadWinScreen();
+        if (currentIdx < selectedQuestions.length) { 
+            loadQuizQuestion(); 
+        } else { 
+            loadWinScreen(); 
         }
     } else {
         s_false.play(); 
-        loadWrongScreen(); // เรียกแสดงหน้าจอเฉลยตอนตอบผิด
+        loadWrongScreen(); 
     }
 }
 window.checkUserAnswer = checkUserAnswer;
 
-// หน้าต่างตอนตอบผิด (กางช้อยส์ข้อที่ถูก + โชว์คำแปลไทยเฉลยทันที)
 function loadWrongScreen() {
-    window.speechSynthesis.cancel(); 
+    window.speechSynthesis.cancel();
     var txt = translationData[uiLang];
-    var quizList = selectedQuestions.questions;
-    var nowQuiz = quizList[currentIdx];
+    var nowQuiz = selectedQuestions[currentIdx];
     
-    // วนลูปหาวัตถุข้อที่ถูกต้องเพื่อดึงค่ามาเฉลย
-    var correctAnsObj = null;
-    for (var i = 0; i < nowQuiz.choices.length; i++) {
-        if (nowQuiz.choices[i].isCorrect === true) {
-            correctAnsObj = nowQuiz.choices[i];
-            break;
-        }
-    }
-
+    var correctAns = nowQuiz.choices.find(c => c.isCorrect === true);
+    
     mainScreen.innerHTML = `
         <h1 style="color: #FF477E;">${txt.wTitle}</h1>
         <div class="bubble">
             <p style="margin:0 0 10px 0; font-weight:bold; color:#666;">${txt.wDetail}</p>
-            <div style="background:#FFF; padding:10px; border-radius:10px; border:1px solid #FFC2D1; font-size:18px;">
-                ${correctAnsObj.text}
-            </div>
-            <p style="margin:10px 0 0 0; font-size:14px; color:#FF477E;">
-                <b>${txt.wTrans}</b> ${correctAnsObj.thMeaning}
-            </p>
+            <div style="background:#FFF; padding:10px; border-radius:10px; border:1px solid #FFC2D1; font-size:18px;">${correctAns.text}</div>
+            <p style="margin:10px 0 0 0; font-size:14px; color:#FF477E;"><b>${txt.wTrans}</b> ${correctAns.thMeaning}</p>
         </div>
         <div>
             <button class="btn-choice" style="text-align:center; background:#FFB3C6;" onclick="retryAction()">${txt.wBtn}</button>
@@ -262,44 +263,32 @@ function loadWrongScreen() {
 function retryAction() { s_click.play(); loadQuizQuestion(); }
 window.retryAction = retryAction;
 
-function goHomeAction() { 
-    s_click.play(); 
-    window.speechSynthesis.cancel(); 
-    currentLang = ''; 
-    loadStartPage(); 
-}
+function goHomeAction() { s_click.play(); window.speechSynthesis.cancel(); currentLang = ''; loadStartPage(); }
 window.goHomeAction = goHomeAction;
 
-// หน้าจอสรุปคลังศัพท์เมื่อเล่นชนะเคลียร์ด่านสำเร็จ
 function loadWinScreen() {
-    window.speechSynthesis.cancel(); 
+    window.speechSynthesis.cancel();
     var txt = translationData[uiLang];
     mainScreen.innerHTML = `
         <h1>${txt.winTitle}</h1>
-        <div class="bubble" style="text-align:left;">${txt.winDetail}</div>
-        
-        <div class="box-vocab">
-            <div style="font-weight:bold; color:#117A65; margin-bottom:5px;">${txt.vTitle}</div>
-            <ul>${selectedQuestions.vocab}</ul>
-        </div>
-        
+        <div class="bubble" style="text-align:left; line-height: 2;">${txt.winDetail}</div>
         <button class="btn-choice btn-back-home" onclick="goHomeAction()">${txt.again}</button>
     `;
 }
 
-// หน้าแรกสุดต้อนรับของตัวเว็บ (หัวข้อใหญ่สุดเด่นๆ ไม่มีรูปภาพและอิโมจิ)
 function loadStartPage() {
     var txt = translationData[uiLang];
     mainScreen.innerHTML = `
         <h1>TalkBuddiez</h1>
         <div class="bubble">${txt.welcome}</div>
         <div>
-            <button class="btn-choice" onclick="startRandomGame('EN')">${txt.b1}</button>
-            <button class="btn-choice" onclick="startRandomGame('JP')">${txt.b2}</button>
-            <button class="btn-choice" onclick="startRandomGame('CN')">${txt.b3}</button>
+            <button class="btn-choice" onclick="startLanguageGame('EN')">${txt.b1}</button>
+            <button class="btn-choice" onclick="startLanguageGame('JP')">${txt.b2}</button>
+            <button class="btn-choice" onclick="startLanguageGame('CN')">${txt.b3}</button>
         </div>
     `;
 }
 
-// สั่งรันให้หน้าแรกแสดงผลทันทีเมื่อเปิดหน้าเว็บขึ้นมาครั้งแรก
+// เริ่มต้นเรียกใช้งานหน้าแรกสุด
+loadStartPage();
 loadStartPage();
