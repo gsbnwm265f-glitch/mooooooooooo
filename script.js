@@ -1,34 +1,44 @@
+// ประกาศตัวแปรแกนหลัก
 var mainScreen = document.getElementById('game-page');
 var uiLang = 'TH'; 
 var currentLang = ''; 
 var selectedQuestions = []; 
 var currentIdx = 0;
 
+// โหลดไฟล์เสียงเอฟเฟกต์
 var s_click = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav'); 
 var s_true = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-84.wav'); 
 var s_false = new Audio('https://assets.mixkit.co/active_storage/sfx/241/241-84.wav'); 
 
+// 🔊 ฟังก์ชันเล่นเสียงเจ้าของภาษา
 function speakText() {
     window.speechSynthesis.cancel(); 
+    
     var nowQuiz = selectedQuestions[currentIdx];
     var cleanText = nowQuiz.speech.replace(/<rt>[^<]*<\/rt>/g, '').replace(/<[^>]*>/g, ''); 
+    
     var msg = new SpeechSynthesisUtterance(cleanText);
-    msg.rate = 1.0; msg.pitch = 1.0;
+    msg.rate = 1.0; 
+    msg.pitch = 1.0;
+    
     var voices = window.speechSynthesis.getVoices();
     
     if (currentLang === 'EN') {
         msg.lang = 'en-US';
         var enVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google'));
         if (enVoice) msg.voice = enVoice;
-    } else if (currentLang === 'JP') {
+    } 
+    else if (currentLang === 'JP') {
         msg.lang = 'ja-JP';
         var jpVoice = voices.find(v => v.lang.includes('ja') || v.lang.includes('JP'));
         if (jpVoice) msg.voice = jpVoice;
-    } else if (currentLang === 'CN') {
+    } 
+    else if (currentLang === 'CN') {
         msg.lang = 'zh-CN';
         var cnVoice = voices.find(v => v.lang.includes('zh') || v.lang.includes('CN') || v.name.toLowerCase().includes('chinese'));
         if (cnVoice) msg.voice = cnVoice;
     }
+    
     window.speechSynthesis.speak(msg); 
 }
 window.speakText = speakText;
@@ -37,6 +47,7 @@ if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !=
     speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 }
 
+// ข้อความระบบแปลภาษาหน้า UI
 var translationData = {
     TH: {
         welcome: "ยินดีต้อนรับสู่ TalkBuddiez มาเลือกฝึกทักษะการฟังและตอบบทสนทนากับเจ้าของภาษากันเลยค่ะ!",
@@ -56,6 +67,7 @@ var translationData = {
     }
 };
 
+// คลังคำถามช้อยส์ 4 ข้อ
 var gamePackage = {
     EN: [
         {
@@ -136,7 +148,7 @@ var gamePackage = {
                 { text: "A. <ruby>我<rt>wǒ</rt></ruby><ruby>想<rt>xiǎng</rt></ruby><ruby>要<rt>yào</rt></ruby><ruby>一<rt>yī</rt></ruby><ruby>杯<rt>bēi</rt></ruby><ruby>冰<rt>bīng</rt></ruby><ruby>美<rt>měi</rt></ruby><ruby>式<rt>shì</rt></ruby>。", isCorrect: true, thMeaning: "ฉันขออเมริกาโน่เย็นหนึ่งแก้วค่ะ" },
                 { text: "B. <ruby>这<rt>zhè</rt></ruby><ruby>个<rt>gè</rt></ruby><ruby>衣<rt>yī</rt></ruby><ruby>服<rt>fu</rt></ruby><ruby>太<rt>tài</rt></ruby><ruby>贵<rt>guì</rt></ruby><ruby>了<rt>le</rt></ruby>。", isCorrect: false, thMeaning: "" },
                 { text: "C. <ruby>我<rt>wǒ</rt></ruby><ruby>不<rt>bù</rt></ruby><ruby>知<rt>zhī</rt></ruby><ruby>道<rt>dào</rt></ruby><ruby>医<rt>yī</rt></ruby><ruby>院<rt>yuàn</rt></ruby><ruby>在<rt>zài</rt></ruby><ruby>哪<rt>nǎ</rt></ruby>。", isCorrect: false, thMeaning: "" },
-                { text: "D. <ruby>再<rt>zài</rt></ruby><ruby>见<rt>jiàn</rt></ruby>，<ruby>祝<rt>zhù</rt></ruby><ruby>你<rt>nǐ</rt></ruby><ruby>幸<rt>xìng</rt></ruby><ruby>福<rt>fú</rt></ruby>。", isCorrect: false, thMeaning: "" }
+                { text: "D. <ruby>再<rt>zài</rt></ruby><ruby>见<rt>jiàn</rt></ruby>，<ruby>祝<rt>zhù</rt></ruby><ruby>你<rt>nǐ</rt></ruby><ruby>信<rt>xìng</rt></ruby><ruby>福<rt>fú</rt></ruby>。", isCorrect: false, thMeaning: "" }
             ]
         },
         {
@@ -145,8 +157,8 @@ var gamePackage = {
             trans: "(ชุดกี่เพ้าตัวนี้ราคา 100 หยวนค่ะ)",
             choices: [
                 { text: "A. <ruby>我<rt>wǒ</rt></ruby><ruby>想<rt>xiǎng</rt></ruby><ruby>吃<rt>chī</rt></ruby><ruby>面<rt>miàn</rt></ruby><ruby>条<rt>tiáo</rt></ruby>。", isCorrect: false, thMeaning: "" },
-                { text: "B. <ruby>太<rt>tài</rt></ruby><ruby>贵<rt>guì</rt></ruby><ruby>了<rt>le</rt></ruby>！<ruby>便<rt>piányi</rt></ruby><ruby>宜<rt>yi</rt></ruby><ruby>点<rt>diǎn</rt></ruby><ruby>吧<rt>ba</rt></ruby>？", isCorrect: true, thMeaning: "แพงเกินไปแล้ว! ลดหน่อยได้ไหมคะ?" },
-                { text: "C. <ruby>下<rt>xià</rt></ruby><ruby>雨<rt>yǔ</rt></ruby><ruby>了<rt>le</rt></ruby>，<ruby>我<rt>wǒ</rt></ruby><ruby>回<rt>huí</rt></ruby><ruby>家<rt>jiā</rt></ruby><ruby>了<rt>le</rt></ruby>。", isCorrect: false, thMeaning: "" },
+                { text: "B. <ruby>太<rt>tài</rt></ruby><ruby>贵<rt>guì</rt></ruby><ruby>了<rt>le</rt></ruby>！<ruby>便<rt>piányi</rt></ruby><ruby>居<rt>yí</rt></ruby><ruby>点<rt>diǎn</rt></ruby><ruby>吧<rt>ba</rt></ruby>？", isCorrect: true, thMeaning: "แพงเกินไปแล้ว! ลดหน่อยได้ไหมคะ?" },
+                { text: "C. <ruby>下<rt>xià</rt></ruby><ruby>雨<rt>yǔ</rt></ruby><ruby>了<rt>le</rt></ruby><ruby>，<ruby>我<rt>wǒ</rt></ruby><ruby>回<rt>huí</rt></ruby><ruby>家<rt>jiā</rt></ruby><ruby>了<rt>le</rt></ruby>。", isCorrect: false, thMeaning: "" },
                 { text: "D. <ruby>你<rt>nǐ</rt></ruby><ruby>是<rt>shì</rt></ruby><ruby>哪<rt>nǎ</rt></ruby><ruby>国<rt>guó</rt></ruby><ruby>人<rt>rén</rt></ruby>？", isCorrect: false, thMeaning: "" }
             ]
         },
@@ -265,10 +277,5 @@ function loadStartPage() {
     `;
 }
 
-loadStartPage();
-        </div>
-    `;
-}
-
-// เริ่มต้นเรียกใช้งานหน้าแรกสุดเมื่อเปิดเว็บ
+// เรียกใช้งานหน้าแรกสุดหลังจากทุกอย่างพร้อม
 loadStartPage();
