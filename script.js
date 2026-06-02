@@ -1,45 +1,34 @@
-// ประกาศตัวแปรควบคุมหน้าจอหลักและสถานะเกมสไตล์พื้นฐาน
 var mainScreen = document.getElementById('game-page');
 var uiLang = 'TH'; 
 var currentLang = ''; 
 var selectedQuestions = []; 
 var currentIdx = 0;
 
-// โหลดไฟล์เสียงเอฟเฟกต์ คลิก / ถูก / ผิด
 var s_click = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav'); 
 var s_true = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-84.wav'); 
 var s_false = new Audio('https://assets.mixkit.co/active_storage/sfx/241/241-84.wav'); 
 
-// 🔊 ฟังก์ชันสั่งออกเสียงแยกตามภาษาอัตโนมัติ (แก้ปัญหาเว็บเงียบเนื่องจากโดนเบราว์เซอร์บล็อก)
 function speakText() {
     window.speechSynthesis.cancel(); 
-    
     var nowQuiz = selectedQuestions[currentIdx];
     var cleanText = nowQuiz.speech.replace(/<rt>[^<]*<\/rt>/g, '').replace(/<[^>]*>/g, ''); 
-    
     var msg = new SpeechSynthesisUtterance(cleanText);
-    msg.rate = 1.0; 
-    msg.pitch = 1.0;
-    
+    msg.rate = 1.0; msg.pitch = 1.0;
     var voices = window.speechSynthesis.getVoices();
     
-    // ตรวจเช็คสลับสำเนียงเสียงพูดให้ตรงตามด่านภาษาที่เลือกเล่น
     if (currentLang === 'EN') {
         msg.lang = 'en-US';
         var enVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google'));
         if (enVoice) msg.voice = enVoice;
-    } 
-    else if (currentLang === 'JP') {
+    } else if (currentLang === 'JP') {
         msg.lang = 'ja-JP';
         var jpVoice = voices.find(v => v.lang.includes('ja') || v.lang.includes('JP'));
         if (jpVoice) msg.voice = jpVoice;
-    } 
-    else if (currentLang === 'CN') {
+    } else if (currentLang === 'CN') {
         msg.lang = 'zh-CN';
         var cnVoice = voices.find(v => v.lang.includes('zh') || v.lang.includes('CN') || v.name.toLowerCase().includes('chinese'));
         if (cnVoice) msg.voice = cnVoice;
     }
-    
     window.speechSynthesis.speak(msg); 
 }
 window.speakText = speakText;
@@ -48,7 +37,6 @@ if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !=
     speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 }
 
-// ข้อมูลข้อความระบบสำหรับเปลี่ยนภาษาหน้าเมนู (TH / EN)
 var translationData = {
     TH: {
         welcome: "ยินดีต้อนรับสู่ TalkBuddiez มาเลือกฝึกทักษะการฟังและตอบบทสนทนากับเจ้าของภาษากันเลยค่ะ!",
@@ -68,9 +56,7 @@ var translationData = {
     }
 };
 
-// คลังคำถาม 3 ภาษา รวมภาษาละ 3 สถานการณ์จำลอง (มีตัวเลือกจุใจด่านละ 4 ข้อ A, B, C, D)
 var gamePackage = {
-    // 🇬🇧 ภาษาอังกฤษ
     EN: [
         {
             title: "Scenario 1: สั่งกาแฟที่ร้าน (Coffee Shop)",
@@ -106,7 +92,6 @@ var gamePackage = {
             ]
         }
     ],
-    // 🇯🇵 ภาษาญี่ปุ่น
     JP: [
         {
             title: "Scenario 1: เข้าร้านอาหาร (レストラン)",
@@ -142,7 +127,6 @@ var gamePackage = {
             ]
         }
     ],
-    // 🇨🇳 ภาษาจีนกลาง
     CN: [
         {
             title: "Scenario 1: สั่งเครื่องดื่มในร้านกาแฟ (咖啡厅)",
@@ -152,7 +136,7 @@ var gamePackage = {
                 { text: "A. <ruby>我<rt>wǒ</rt></ruby><ruby>想<rt>xiǎng</rt></ruby><ruby>要<rt>yào</rt></ruby><ruby>一<rt>yī</rt></ruby><ruby>杯<rt>bēi</rt></ruby><ruby>冰<rt>bīng</rt></ruby><ruby>美<rt>měi</rt></ruby><ruby>式<rt>shì</rt></ruby>。", isCorrect: true, thMeaning: "ฉันขออเมริกาโน่เย็นหนึ่งแก้วค่ะ" },
                 { text: "B. <ruby>这<rt>zhè</rt></ruby><ruby>个<rt>gè</rt></ruby><ruby>衣<rt>yī</rt></ruby><ruby>服<rt>fu</rt></ruby><ruby>太<rt>tài</rt></ruby><ruby>贵<rt>guì</rt></ruby><ruby>了<rt>le</rt></ruby>。", isCorrect: false, thMeaning: "" },
                 { text: "C. <ruby>我<rt>wǒ</rt></ruby><ruby>不<rt>bù</rt></ruby><ruby>知<rt>zhī</rt></ruby><ruby>道<rt>dào</rt></ruby><ruby>医<rt>yī</rt></ruby><ruby>院<rt>yuàn</rt></ruby><ruby>在<rt>zài</rt></ruby><ruby>哪<rt>nǎ</rt></ruby>。", isCorrect: false, thMeaning: "" },
-                { text: "D. <ruby>再<rt>zài</rt></ruby><ruby>见<rt>jiàn</rt></ruby><ruby>，<ruby>祝<rt>zhù</rt></ruby><ruby>你<rt>nǐ</rt></ruby><ruby>幸<rt>xìng</rt></ruby><ruby>福<rt>fú</rt></ruby>。", isCorrect: false, thMeaning: "" }
+                { text: "D. <ruby>再<rt>zài</rt></ruby><ruby>见<rt>jiàn</rt></ruby>，<ruby>祝<rt>zhù</rt></ruby><ruby>你<rt>nǐ</rt></ruby><ruby>幸<rt>xìng</rt></ruby><ruby>福<rt>fú</rt></ruby>。", isCorrect: false, thMeaning: "" }
             ]
         },
         {
@@ -163,7 +147,7 @@ var gamePackage = {
                 { text: "A. <ruby>我<rt>wǒ</rt></ruby><ruby>想<rt>xiǎng</rt></ruby><ruby>吃<rt>chī</rt></ruby><ruby>面<rt>miàn</rt></ruby><ruby>条<rt>tiáo</rt></ruby>。", isCorrect: false, thMeaning: "" },
                 { text: "B. <ruby>太<rt>tài</rt></ruby><ruby>贵<rt>guì</rt></ruby><ruby>了<rt>le</rt></ruby>！<ruby>便<rt>piányi</rt></ruby><ruby>宜<rt>yi</rt></ruby><ruby>点<rt>diǎn</rt></ruby><ruby>吧<rt>ba</rt></ruby>？", isCorrect: true, thMeaning: "แพงเกินไปแล้ว! ลดหน่อยได้ไหมคะ?" },
                 { text: "C. <ruby>下<rt>xià</rt></ruby><ruby>雨<rt>yǔ</rt></ruby><ruby>了<rt>le</rt></ruby>，<ruby>我<rt>wǒ</rt></ruby><ruby>回<rt>huí</rt></ruby><ruby>家<rt>jiā</rt></ruby><ruby>了<rt>le</rt></ruby>。", isCorrect: false, thMeaning: "" },
-                { text: "D. <ruby>你<rt>nǐ</rt></ruby><ruby>是<rt>shì</rt></ruby><ruby>哪<rt>nǎ</rt></ruby><ruby>国<rt>guó</rt></ruby><race>人<rt>rén</rt></race>？", isCorrect: false, thMeaning: "" }
+                { text: "D. <ruby>你<rt>nǐ</rt></ruby><ruby>是<rt>shì</rt></ruby><ruby>哪<rt>nǎ</rt></ruby><ruby>国<rt>guó</rt></ruby><ruby>人<rt>rén</rt></ruby>？", isCorrect: false, thMeaning: "" }
             ]
         },
         {
@@ -174,7 +158,7 @@ var gamePackage = {
                 { text: "A. <ruby>我<rt>wǒ</rt></ruby><ruby>没<rt>méi</rt></ruby><ruby>有<rt>yǒu</rt></ruby><ruby>钱<rt>qián</rt></ruby>。", isCorrect: false, thMeaning: "" },
                 { text: "B. <ruby>这<rt>zhè</rt></ruby><ruby>个<rt>gè</rt></ruby><ruby>很<rt>hěn</rt></ruby><ruby>好<rt>hǎo</rt></ruby><ruby>吃<rt>chī</rt></ruby>。", isCorrect: false, thMeaning: "" },
                 { text: "C. <ruby>我<rt>wǒ</rt></ruby><ruby>不<rt>bù</rt></ruby><ruby>喜<rt>xǐ</rt></ruby><ruby>欢<rt>huān</rt></ruby><ruby>看<rt>kàn</rt></ruby><ruby>电<rt>diàn</rt></ruby><ruby>影<rt>yǐng</rt></ruby>。", isCorrect: false, thMeaning: "" },
-                { text: "D. <ruby>往<rt>wǎng</rt></ruby><ruby>前<rt>qián</rt></ruby><ruby>走<rt>zǒu</rt></ruby><ruby>，<ruby>看<rt>kàn</rt></ruby><ruby>见<rt>jiàn</rt></ruby><ruby>地<rt>dì</rt></ruby><ruby>铁<rt>tiě</rt></ruby><ruby>站<rt>zhàn</rt></ruby><ruby>就<rt>jiù</rt></ruby><ruby>到<rt>dào</rt></ruby><ruby>了<rt>le</rt></ruby>。", isCorrect: true, thMeaning: "เดินตรงไปข้างหน้า เห็นสถานีรถไฟใต้ดินก็ถึงแล้วค่ะ" }
+                { text: "D. <ruby>往<rt>wǎng</rt></ruby><ruby>前<rt>qián</rt></ruby><ruby>走<rt>zǒu</rt></ruby>，<ruby>看<rt>kàn</rt></ruby><ruby>见<rt>jiàn</rt></ruby><ruby>地<rt>dì</rt></ruby><ruby>铁<rt>tiě</rt></ruby><ruby>站<rt>zhàn</rt></ruby><ruby>就<rt>jiù</rt></ruby><ruby>到<rt>dào</rt></ruby><ruby>了<rt>le</rt></ruby>。", isCorrect: true, thMeaning: "เดินตรงไปข้างหน้า เห็นสถานีรถไฟใต้ดินก็ถึงแล้วค่ะ" }
             ]
         }
     ]
@@ -191,8 +175,7 @@ window.changeUiLang = changeUiLang;
 
 function startLanguageGame(lang) {
     s_click.play(); 
-    currentLang = lang; 
-    currentIdx = 0;
+    currentLang = lang; currentIdx = 0;
     selectedQuestions = gamePackage[lang]; 
     loadQuizQuestion();
 }
@@ -203,7 +186,6 @@ function loadQuizQuestion() {
     var txt = translationData[uiLang]; 
     var btnHtml = '';
     
-    // วนลูปเพื่อสร้างปุ่มคำตอบ 4 ปุ่ม แบบอ่านเข้าใจง่ายตามสไตล์ YouTube
     for (var i = 0; i < nowQuiz.choices.length; i++) {
         var opt = nowQuiz.choices[i];
         btnHtml += `<button class="btn-choice" onclick="checkUserAnswer(${opt.isCorrect})">${opt.text}</button>`;
@@ -227,14 +209,9 @@ function checkUserAnswer(isCorrect) {
     if (isCorrect === true) {
         s_true.play(); 
         currentIdx = currentIdx + 1;
-        if (currentIdx < selectedQuestions.length) { 
-            loadQuizQuestion(); 
-        } else { 
-            loadWinScreen(); 
-        }
+        if (currentIdx < selectedQuestions.length) { loadQuizQuestion(); } else { loadWinScreen(); }
     } else {
-        s_false.play(); 
-        loadWrongScreen(); 
+        s_false.play(); loadWrongScreen(); 
     }
 }
 window.checkUserAnswer = checkUserAnswer;
@@ -243,7 +220,6 @@ function loadWrongScreen() {
     window.speechSynthesis.cancel();
     var txt = translationData[uiLang];
     var nowQuiz = selectedQuestions[currentIdx];
-    
     var correctAns = nowQuiz.choices.find(c => c.isCorrect === true);
     
     mainScreen.innerHTML = `
@@ -285,6 +261,11 @@ function loadStartPage() {
             <button class="btn-choice" onclick="startLanguageGame('EN')">${txt.b1}</button>
             <button class="btn-choice" onclick="startLanguageGame('JP')">${txt.b2}</button>
             <button class="btn-choice" onclick="startLanguageGame('CN')">${txt.b3}</button>
+        </div>
+    `;
+}
+
+loadStartPage();
         </div>
     `;
 }
